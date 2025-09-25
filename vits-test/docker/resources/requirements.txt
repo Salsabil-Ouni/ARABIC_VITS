@@ -1,0 +1,4 @@
+Cython==0.29.21
+numpy==1.25.2
+scipy
+flask==3.0.0

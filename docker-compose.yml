@@ -1,0 +1,57 @@
+services:
+  vits-server:
+    build:
+      context: ./vits-test/docker
+      dockerfile: Dockerfile
+      args:
+        - BASEIMAGE=ubuntu:22.04
+        - DEVICE=cpu
+    ports:
+      - "16000:80"
+    volumes:
+      - ./vits-test:/workdir
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - tts-network
+    restart: unless-stopped
+    command:
+      [
+        "bash",
+        "-c",
+        "python3 main.py --port 80 --model_path './archives/G_2300000.pth' --hps_path './archives/inference.json'",
+      ]
+
+  # Svelte Frontend
+  tts-frontend:
+    build:
+      context: ./tts-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_VITS_URL=http://localhost:16000
+    depends_on:
+      - vits-server
+    networks:
+      - tts-network
+    restart: unless-stopped
+
+  monotonic-align-builder:
+    build:
+      context: ./vits-test/docker
+      dockerfile: Dockerfile
+      args:
+        - BASEIMAGE=ubuntu:22.04
+        - DEVICE=cpu
+    volumes:
+      - ./vits-test:/workdir
+    working_dir: /workdir/vits/monotonic_align
+    command: ["bash", "-c", "python3 setup.py build_ext --inplace"]
+    profiles: ["monotonic_align_builder"]
+    networks:
+      - tts-network
+
+networks:
+  tts-network:
+    driver: bridge

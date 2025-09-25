@@ -1,0 +1,9 @@
+test.wav
+.DS_Store
+__pycache__
+
+build
+dist
+.venv
+
+archives/*.hash

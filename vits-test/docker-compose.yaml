@@ -1,0 +1,38 @@
+version: '3.8'
+
+x-tts-service: &tts-service
+  build:
+    context: docker/.
+    args:
+      - BASEIMAGE=ubuntu:22.04
+      - DEVICE=cpu
+  ports:
+    - 16000:80
+  volumes:
+    - ./:/workdir
+  restart: always
+  command: ["bash", "-c", 'python3 main.py --port 80 --model_path "./archives/$model_use" --hps_path "$hps_path"']
+
+services:
+  tts-cpu:
+    <<: *tts-service
+    profiles: [ "cpu" ]
+  tts-gpu:
+    <<: *tts-service
+    build:
+      context: docker/.
+      args:
+        - BASEIMAGE=nvidia/cuda:12.0.0-base-ubuntu22.04
+        - DEVICE=gpu
+    profiles: [ "gpu" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: all
+            capabilities: [ gpu ]
+  monotonic-align-builder:
+    <<: *tts-service
+    command: ["bash", "-c", "cd vits/monotonic_align; python3 setup.py build_ext --inplace"]
+    profiles: [ "monotonic_align_builder" ]
